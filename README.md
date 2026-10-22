@@ -2,7 +2,7 @@
 
 AgentDojo 벤치마크에서 각 논문이 보고한 prompt injection 방어 기법의 Utility와 공격 성공률(ASR)을 함께 모으는 저장소입니다.
 
-**인터랙티브 페이지: https://OWNER.github.io/REPO/** (필터, 정렬, Utility-ASR 산점도)
+**인터랙티브 페이지: https://niceguy1313.github.io/agentdojo-defense-board/** (필터, 정렬, Utility-ASR 산점도, 내 결과 위치 비교)
 
 > [!NOTE]
 > - 수치는 각 논문의 보고값입니다. 논문마다 모델, AgentDojo 버전, 공격 설정이 달라 논문 간 비교는 참고용입니다.

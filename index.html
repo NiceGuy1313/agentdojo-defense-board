@@ -25,6 +25,8 @@
   --bar: #2a78d6;
   --bar-track: #eef0f3;
   --hl: #f2f6fc;
+  --mine: #0e9f6e;
+  --mine-bg: #ecf8f3;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -43,6 +45,8 @@
     --bar: #3987e5;
     --bar-track: #262625;
     --hl: #1f2733;
+    --mine: #34c58f;
+    --mine-bg: #16271f;
   }
 }
 :root[data-theme="dark"] {
@@ -61,6 +65,8 @@
   --bar: #3987e5;
   --bar-track: #262625;
   --hl: #1f2733;
+  --mine: #34c58f;
+  --mine-bg: #16271f;
 }
 * { box-sizing: border-box; }
 body {
@@ -167,6 +173,30 @@ td.venue { color: var(--text-2); white-space: nowrap; }
 td.paper a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
 td.paper a:hover { color: var(--accent); text-decoration-color: currentColor; }
 .noteflag { color: var(--accent); cursor: help; font-weight: 700; }
+.mine-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 18px; }
+.mine-grid textarea {
+  width: 100%; min-height: 104px; resize: vertical; font: 13px/1.6 "JetBrains Mono", ui-monospace, monospace;
+  color: var(--text); background: var(--bg); border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px 10px;
+}
+.mine-help { font-size: 12.5px; color: var(--text-3); margin: 4px 0 8px; }
+.mine-err { font-size: 12.5px; color: var(--baseline); margin: 6px 0 0; }
+.mine-actions { display: flex; gap: 8px; margin-top: 8px; }
+.mine-actions button {
+  font: inherit; font-size: 13px; color: var(--text); background: var(--bg); cursor: pointer;
+  border: 1px solid var(--line-strong); border-radius: 7px; padding: 4px 12px;
+}
+.mine-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.pos { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pos li { border-left: 3px solid var(--mine); padding: 2px 0 2px 12px; font-size: 13.5px; }
+.pos .t { font-weight: 700; }
+.pos .m { color: var(--text-2); font-size: 12.5px; }
+.pos .stats { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 2px; }
+.pos .stats b { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 500; }
+.pos .dom { color: var(--text-3); font-size: 12.5px; }
+.pos-empty { color: var(--text-3); font-size: 13.5px; margin: 0; }
+tbody tr.mine td { background: var(--mine-bg); }
+tbody tr.mine td:first-child { box-shadow: inset 3px 0 0 var(--mine); }
+.pt-label { fill: var(--mine); font-size: 12px; font-weight: 700; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
 footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
 
 @media (max-width: 640px) {
@@ -176,6 +206,7 @@ footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
   .controls label { flex: 1 1 100%; }
   .controls label select { flex: 1; }
   .controls .count { margin-left: 0; }
+  .mine-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -204,6 +235,25 @@ footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
     <label>구분 <select id="fKind"><option value="">전체</option></select></label>
     <span class="count" id="count"></span>
   </div>
+
+  <section>
+    <div class="card">
+      <h2>내 결과 비교</h2>
+      <div class="mine-grid">
+        <div>
+          <p class="mine-help">한 줄에 하나씩 <code>이름, 모델, Utility, Utility(공격 중), ASR</code>. 숫자는 %, 없는 값은 비워 두거나 <code>-</code>. 입력값은 어디에도 저장되지 않으며 새로고침하면 사라집니다.</p>
+          <textarea id="mineInput" spellcheck="false" aria-label="내 결과 입력" placeholder="MyDefense, GPT-4o, 70.5, 62.1, 0.8"></textarea>
+          <div class="mine-actions">
+            <button type="button" id="mineClear">지우기</button>
+          </div>
+          <p class="mine-err" id="mineErr" hidden></p>
+        </div>
+        <div>
+          <ul class="pos" id="minePos"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <section>
     <div class="card">
@@ -261,6 +311,7 @@ const KINDS = {
   baseline: { label: "Baseline 방어 (다른 논문에서 보고)", color: "var(--baseline)" },
   none:     { label: "방어 없음", color: "var(--nodef)" },
 };
+const KIND_INFO = { ...KINDS, mine: { label: "내 결과", color: "var(--mine)" } };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = v => v === null ? "N/A" : (Number.isInteger(v) ? v + "%" : v.toFixed(2) + "%");
 
@@ -268,6 +319,17 @@ const fmt = v => v === null ? "N/A" : (Number.isInteger(v) ? v + "%" : v.toFixed
 function marker(kind, x, y, size) {
   const ns = "http://www.w3.org/2000/svg";
   let el;
+  if (kind === "mine") {
+    el = document.createElementNS(ns, "path");
+    const pts = [];
+    for (let k = 0; k < 10; k++) {
+      const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? size * 0.45 : size;
+      pts.push(`${(x + rr * Math.cos(a)).toFixed(2)},${(y + rr * Math.sin(a)).toFixed(2)}`);
+    }
+    el.setAttribute("d", `M${pts.join("L")}Z`);
+    el.setAttribute("fill", KIND_INFO.mine.color); el.setAttribute("stroke", "var(--panel)"); el.setAttribute("stroke-width", 1.5);
+    return el;
+  }
   if (kind === "baseline") {
     el = document.createElementNS(ns, "rect");
     el.setAttribute("x", x - size); el.setAttribute("y", y - size);
@@ -285,7 +347,9 @@ function marker(kind, x, y, size) {
 }
 
 // legend
-document.getElementById("legend").innerHTML = Object.entries(KINDS).map(([k, v]) => {
+function drawLegend() {
+document.getElementById("legend").innerHTML = Object.entries(KIND_INFO).filter(([k]) => k !== "mine" || MINE.length).map(([k, v]) => {
+  if (k === "mine") return `<span><svg width="14" height="14"><path d="M7,0.5L8.6,4.9L13.2,5L9.6,7.9L10.8,12.4L7,9.8L3.2,12.4L4.4,7.9L0.8,5L5.4,4.9Z" fill="${v.color}"/></svg>${v.label}</span>`;
   const shape = k === "baseline"
     ? `<rect x="1" y="1" width="10" height="10" rx="1.5" fill="${v.color}"/>`
     : k === "none"
@@ -293,6 +357,7 @@ document.getElementById("legend").innerHTML = Object.entries(KINDS).map(([k, v])
       : `<circle cx="6" cy="6" r="5.5" fill="${v.color}"/>`;
   return `<span><svg width="12" height="12">${shape}</svg>${v.label}</span>`;
 }).join("");
+}
 
 // ── 필터 ──
 const state = { q: "", paper: "", model: "", kind: "", y: "ua", sort: { key: null, dir: 1 } };
@@ -303,13 +368,70 @@ function fillSelect(id, values, labels) {
 }
 
 
-function filtered() {
+function filteredBase() {
   const q = state.q.toLowerCase();
   return ROWS.filter(r =>
     (!state.paper || r.paper === state.paper) &&
     (!state.model || r.model === state.model) &&
     (!state.kind || r.kind === state.kind) &&
     (!q || [r.paper, r.name, r.venue, r.method, r.model].join(" ").toLowerCase().includes(q)));
+}
+
+// ── 내 결과 (저장하지 않음, 새로고침하면 사라짐) ──
+let MINE = [];
+const mineInput = document.getElementById("mineInput");
+const mineErr = document.getElementById("mineErr");
+function parseMine(text) {
+  const rows = [], errs = [];
+  text.split(/\r?\n/).forEach((line, k) => {
+    if (!line.trim() || line.trim().startsWith("#")) return;
+    const c = line.split(line.includes("\t") ? "\t" : ",").map(s => s.trim());
+    const v = s => { if (s === undefined || s === "" || s === "-" || s === "N/A") return null; const x = parseFloat(s.replace("%", "")); return Number.isFinite(x) ? x : NaN; };
+    const [name, model, u, ua, asr] = [c[0], c[1] || "", v(c[2]), v(c[3]), v(c[4])];
+    if (!name) return errs.push(`${k + 1}번째 줄: 이름이 비어 있습니다.`);
+    if ([u, ua, asr].some(x => Number.isNaN(x))) return errs.push(`${k + 1}번째 줄: 숫자를 읽을 수 없습니다.`);
+    rows.push({ i: 100000 + rows.length, mine: true, paper: "내 결과", name, venue: "", method: "", model, u, ua, asr, kind: "mine", link: "", note: "" });
+  });
+  return { rows, errs };
+}
+function updateMine() {
+  const { rows, errs } = parseMine(mineInput.value);
+  MINE = rows;
+  mineErr.hidden = !errs.length; mineErr.textContent = errs.join(" ");
+  drawLegend();
+  if (ROWS.length) render();
+}
+updateMine();
+mineInput.addEventListener("input", updateMine);
+document.getElementById("mineClear").addEventListener("click", () => { mineInput.value = ""; updateMine(); });
+
+// 현재 필터에 걸린 기존 결과 안에서의 위치
+function drawPositions(base) {
+  const el = document.getElementById("minePos");
+  if (!MINE.length) { el.innerHTML = `<p class="pos-empty">왼쪽에 결과를 적으면 여기와 차트(★), 표(초록 행)에 위치가 표시됩니다. 순위는 현재 필터에 걸린 결과 기준입니다.</p>`; return; }
+  const yLabel = state.y === "ua" ? "Utility (under attack)" : "Utility (no attack)";
+  const rank = (key, v, better) => {
+    const pool = base.filter(r => r[key] !== null);
+    if (v === null || !pool.length) return "–";
+    const tie = pool.some(r => r[key] === v) ? "공동 " : "";
+    return `${tie}<b>${pool.filter(r => better(r[key], v)).length + 1}</b> / ${pool.length + 1}위`;
+  };
+  el.innerHTML = MINE.map(m => {
+    const y = m[state.y];
+    let dom = "";
+    if (y !== null && m.asr !== null) {
+      const ds = base.filter(r => r[state.y] !== null && r.asr !== null && r.asr <= m.asr && r[state.y] >= y && (r.asr < m.asr || r[state.y] > y));
+      dom = ds.length
+        ? `ASR·${yLabel} 둘 다 나보다 좋은 결과 ${ds.length}개: ${ds.slice(0, 4).map(r => esc(`${r.name} (${r.model})`)).join(", ")}${ds.length > 4 ? " 외" : ""}`
+        : `ASR·${yLabel} 둘 다 나보다 좋은 결과 없음 (Pareto front)`;
+    }
+    const same = base.filter(r => m.model && r.model.toLowerCase() === m.model.toLowerCase()).length;
+    return `<li><div class="t">${esc(m.name)}</div><div class="m">${esc(m.model || "모델 미기재")}${same ? ` · 같은 모델 결과 ${same}개` : ""}</div>
+      <div class="stats"><span>ASR ${fmt(m.asr)} · ${rank("asr", m.asr, (a, b) => a < b)}</span>
+      <span>Utility ${fmt(m.u)} · ${rank("u", m.u, (a, b) => a > b)}</span>
+      <span>공격 중 ${fmt(m.ua)} · ${rank("ua", m.ua, (a, b) => a > b)}</span></div>
+      ${dom ? `<div class="dom">${dom}</div>` : ""}</li>`;
+  }).join("");
 }
 
 // ── 차트 ──
@@ -322,7 +444,7 @@ const tip = document.getElementById("tip");
 
 function showTip(r, ev) {
   tip.innerHTML = `<div class="t">${esc(r.name)}</div><div class="m">${esc(r.method)} · ${esc(r.model)}</div>
-    <div class="m">${esc(r.paper)} 논문 보고값 · ${KINDS[r.kind].label}</div>${r.note ? `<div class="m">${esc(r.note)}</div>` : ""}
+    <div class="m">${r.mine ? "내 결과" : `${esc(r.paper)} 논문 보고값 · ${KINDS[r.kind].label}`}</div>${r.note ? `<div class="m">${esc(r.note)}</div>` : ""}
     <dl><dt>Utility (no attack)</dt><dd>${fmt(r.u)}</dd><dt>Utility (under attack)</dt><dd>${fmt(r.ua)}</dd><dt>ASR</dt><dd>${fmt(r.asr)}</dd></dl>`;
   tip.style.display = "block";
   const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
@@ -359,20 +481,21 @@ function drawChart(rows) {
     .textContent = state.y === "ua" ? "Utility (under attack)" : "Utility (no attack)";
 
   const plotted = rows.filter(r => r[state.y] !== null && r.asr !== null);
-  const order = { none: 0, baseline: 1, proposed: 2 };
+  const order = { none: 0, baseline: 1, proposed: 2, mine: 3 };
   plotted.sort((a, b) => order[a.kind] - order[b.kind]);
   plotted.forEach(r => {
     const g = mk("g", { class: "pt", "data-i": r.i, tabindex: 0, role: "img",
       "aria-label": `${r.name}, ${r.model}: ASR ${fmt(r.asr)}, Utility ${fmt(r[state.y])}` });
     const x = xs(Math.min(r.asr, XMAX)), y = ys(r[state.y]);
-    g.appendChild(marker(r.kind, x, y, r.kind === "baseline" ? 5 : 5.5));
+    g.appendChild(marker(r.kind, x, y, r.kind === "mine" ? 10 : r.kind === "baseline" ? 5 : 5.5));
+    if (r.mine) mk("text", { class: "pt-label", x: x + 13, y: y + 4 }, g).textContent = r.name;
     mk("circle", { cx: x, cy: y, r: 11, fill: "transparent" }, g);
     g.addEventListener("mousemove", ev => { showTip(r, ev); highlight(r.i); });
     g.addEventListener("mouseleave", () => { hideTip(); highlight(null); });
     g.addEventListener("focus", () => { const b = g.getBoundingClientRect(); showTip(r, { clientX: b.right, clientY: b.top }); highlight(r.i); });
     g.addEventListener("blur", () => { hideTip(); highlight(null); });
   });
-  const miss = rows.length - plotted.length;
+  const miss = rows.filter(r => !r.mine).length - plotted.filter(r => !r.mine).length;
   document.getElementById("omitted").textContent = miss ? `값이 N/A인 ${miss}개 행은 차트에서 제외 (표에는 표시).` : "";
 }
 
@@ -420,12 +543,13 @@ function drawTable(rows) {
     const num = v => `<td class="num${v === null ? " na" : ""}">${fmt(v)}</td>`;
     const asr = r.asr === null ? `<td class="num na">N/A</td>`
       : `<td class="num"><div class="asr"><div class="track"><div class="fill" style="width:${Math.min(r.asr, 50) / 50 * 100}%"></div></div><span class="v">${fmt(r.asr)}</span></div></td>`;
-    const k2 = KINDS[r.kind];
+    const k2 = KIND_INFO[r.kind];
     const shape = r.kind === "baseline"
       ? `<rect x="1" y="1" width="8" height="8" rx="1.5" fill="${k2.color}"/>`
+      : r.kind === "mine" ? `<path d="M5,0L6.2,3.4L9.8,3.5L7,5.7L7.9,9.2L5,7.1L2.1,9.2L3,5.7L0.2,3.5L3.8,3.4Z" fill="${k2.color}"/>`
       : r.kind === "none" ? `<circle cx="5" cy="5" r="3.6" fill="none" stroke="${k2.color}" stroke-width="2"/>`
       : `<circle cx="5" cy="5" r="4.5" fill="${k2.color}"/>`;
-    return `<tr data-i="${r.i}" class="${start}">
+    return `<tr data-i="${r.i}" class="${start}${r.mine ? " mine" : ""}">
       <td class="paper">${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.paper)}</a>` : esc(r.paper)}</td>
       <td class="name"><span class="kind" title="${k2.label}"><svg width="10" height="10" aria-hidden="true">${shape}</svg>${esc(r.name)}</span>${r.note ? ` <span class="noteflag" title="${esc(r.note)}">*</span>` : ""}</td>
       <td class="venue">${esc(r.venue)}</td><td class="wrapok">${esc(r.method)}</td><td class="wrapok">${esc(r.model)}</td>
@@ -443,8 +567,10 @@ function drawTable(rows) {
 }
 
 function render() {
-  const rows = filtered();
-  document.getElementById("count").textContent = `${rows.length} / ${ROWS.length}개 결과`;
+  const base = filteredBase();
+  const rows = [...MINE, ...base];
+  document.getElementById("count").textContent = `${base.length} / ${ROWS.length}개 결과`;
+  drawPositions(base);
   drawChart(rows);
   drawTable(sorted(rows));
 }
