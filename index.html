@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AgentDojo 방어 기법 비교</title>
-<meta name="description" content="AgentDojo 벤치마크에서 보고된 prompt injection 방어 기법들의 Utility와 ASR 정리">
+<title>AgentDojo Defense Comparison</title>
+<meta name="description" content="Utility and ASR of prompt injection defenses reported on the AgentDojo benchmark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -76,7 +76,9 @@ body {
   font: 15px/1.6 "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .wrap { max-width: 1280px; margin: 0 auto; padding: 40px 24px 64px; }
-header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.01em; }
+header { position: relative; }
+header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.01em; padding-right: 130px; }
+.lang { position: absolute; top: 0; right: 0; }
 header p { margin: 0; color: var(--text-2); max-width: 760px; }
 .defs {
   display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 18px 0 0; padding: 0;
@@ -201,7 +203,8 @@ footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
 
 @media (max-width: 640px) {
   .wrap { padding: 28px 16px 48px; }
-  header h1 { font-size: 22px; }
+  header h1 { font-size: 22px; padding-right: 0; }
+  .lang { position: static; margin-bottom: 14px; }
   .controls input[type=search] { width: 100%; }
   .controls label { flex: 1 1 100%; }
   .controls label select { flex: 1; }
@@ -213,38 +216,41 @@ footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
 <body>
 <div class="wrap">
   <header>
-    <h1>AgentDojo 방어 기법 비교</h1>
-    <p>AgentDojo 벤치마크에서 각 논문이 보고한 prompt injection 방어 기법의 Utility와 공격 성공률(ASR)을 정리했습니다.</p>
+    <div class="seg lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ko" aria-pressed="false">한국어</button>
+    </div>
+    <h1 data-i18n="h1">AgentDojo Defense Comparison</h1>
+    <p data-i18n="intro"></p>
     <ul class="defs">
-      <li><b>Utility (no attack)</b> 공격 없을 때 task 성공률</li>
-      <li><b>Utility (under attack)</b> 공격 중 task 성공률</li>
-      <li><b>ASR</b> 공격 성공률 (낮을수록 좋음)</li>
+      <li data-i18n-html="def_u"></li>
+      <li data-i18n-html="def_ua"></li>
+      <li data-i18n-html="def_asr"></li>
     </ul>
     <p class="contrib" id="contrib" hidden>
-      <a id="lnkIssue" href="#">새 결과 제보</a>
-      <a id="lnkEdit" href="#">CSV 직접 수정 (PR)</a>
-      <a id="lnkRepo" href="#">GitHub 저장소</a>
+      <a id="lnkIssue" href="#" data-i18n="lnk_issue"></a>
+      <a id="lnkEdit" href="#" data-i18n="lnk_edit"></a>
+      <a id="lnkRepo" href="#" data-i18n="lnk_repo"></a>
     </p>
-    <p class="note">수치는 각 논문의 보고값이며, 논문마다 모델, AgentDojo 버전, 공격 설정이 달라 논문 간 비교는 참고용입니다.</p>
+    <p class="note" data-i18n="note"></p>
   </header>
 
-  <div class="controls" role="group" aria-label="필터">
-    <input type="search" id="q" placeholder="방어 기법, 방식, 모델 검색" aria-label="검색">
-    <label>논문 <select id="fPaper"><option value="">전체</option></select></label>
-    <label>모델 <select id="fModel"><option value="">전체</option></select></label>
-    <label>구분 <select id="fKind"><option value="">전체</option></select></label>
+  <div class="controls" role="group" aria-label="Filters">
+    <input type="search" id="q" data-i18n-ph="q_ph" aria-label="Search">
+    <label><span data-i18n="f_paper"></span> <select id="fPaper"><option value="" data-i18n="all"></option></select></label>
+    <label><span data-i18n="f_model"></span> <select id="fModel"><option value="" data-i18n="all"></option></select></label>
+    <label><span data-i18n="f_kind"></span> <select id="fKind"><option value="" data-i18n="all"></option></select></label>
     <span class="count" id="count"></span>
   </div>
 
   <section>
     <div class="card">
-      <h2>내 결과 비교</h2>
+      <h2 data-i18n="mine_h"></h2>
       <div class="mine-grid">
         <div>
-          <p class="mine-help">한 줄에 하나씩 <code>이름, 모델, Utility, Utility(공격 중), ASR</code>. 숫자는 %, 없는 값은 비워 두거나 <code>-</code>. 입력값은 어디에도 저장되지 않으며 새로고침하면 사라집니다.</p>
-          <textarea id="mineInput" spellcheck="false" aria-label="내 결과 입력" placeholder="MyDefense, GPT-4o, 70.5, 62.1, 0.8"></textarea>
+          <p class="mine-help" data-i18n-html="mine_help"></p>
+          <textarea id="mineInput" spellcheck="false" aria-label="Your results" placeholder="MyDefense, GPT-4o, 70.5, 62.1, 0.8"></textarea>
           <div class="mine-actions">
-            <button type="button" id="mineClear">지우기</button>
+            <button type="button" id="mineClear" data-i18n="clear"></button>
           </div>
           <p class="mine-err" id="mineErr" hidden></p>
         </div>
@@ -259,19 +265,19 @@ footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
     <div class="card">
       <div class="chart-head">
         <h2 style="margin:0">Utility vs ASR</h2>
-        <div class="seg" role="group" aria-label="y축 지표">
+        <div class="seg" id="ySeg" role="group" aria-label="Y-axis metric">
           <button type="button" data-y="ua" aria-pressed="true">Utility (under attack)</button>
           <button type="button" data-y="u" aria-pressed="false">Utility (no attack)</button>
         </div>
       </div>
       <div class="legend" id="legend"></div>
-      <svg id="chart" viewBox="0 0 860 430" role="img" aria-label="방어 기법별 Utility와 ASR 산점도"></svg>
-      <p class="chart-foot">왼쪽 위일수록 좋음 (공격은 막고 task는 잘 수행). x축은 0 근처를 펼쳐 보이기 위해 제곱근 스케일. <span id="omitted"></span></p>
+      <svg id="chart" viewBox="0 0 860 430" role="img" aria-label="Utility vs ASR scatter plot by defense"></svg>
+      <p class="chart-foot"><span data-i18n="chart_foot"></span> <span id="omitted"></span></p>
     </div>
   </section>
 
   <section>
-    <h2>전체 표</h2>
+    <h2 data-i18n="table_h"></h2>
     <div class="table-wrap">
       <table id="tbl">
         <thead><tr></tr></thead>
@@ -280,11 +286,76 @@ footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
     </div>
   </section>
 
-  <footer>열 제목을 누르면 정렬됩니다. 표의 행이나 차트의 점에 마우스를 올리면 서로 강조됩니다. 논문 이름의 링크는 원 논문, <b>*</b> 표시는 비고가 있는 행입니다.</footer>
+  <footer data-i18n-html="footer"></footer>
 </div>
 <div id="tip" role="tooltip"></div>
 
 <script>
+// ── 언어 (영어 기본, 선택은 localStorage에 기억) ──
+const L = {
+  en: {
+    title: "AgentDojo Defense Comparison", h1: "AgentDojo Defense Comparison",
+    intro: "Utility and attack success rate (ASR) of prompt injection defenses on the AgentDojo benchmark, as reported by each paper.",
+    def_u: "<b>Utility (no attack)</b> task success rate without attacks",
+    def_ua: "<b>Utility (under attack)</b> task success rate under attack",
+    def_asr: "<b>ASR</b> attack success rate (lower is better)",
+    lnk_issue: "Submit a result", lnk_edit: "Edit CSV (PR)", lnk_repo: "GitHub repository",
+    note: "Numbers are as reported in each paper. Models, AgentDojo versions, and attack settings differ across papers, so cross-paper comparisons are indicative only.",
+    q_ph: "Search defense, approach, model", f_paper: "Paper", f_model: "Model", f_kind: "Type", all: "All",
+    mine_h: "Compare your results",
+    mine_help: "One per line: <code>name, model, Utility, Utility (under attack), ASR</code>. Numbers in %; leave missing values empty or <code>-</code>. Input is never stored and disappears on reload.",
+    clear: "Clear",
+    chart_foot: "Top-left is better (blocks attacks while still completing tasks). The x-axis uses a square-root scale to spread out values near 0.",
+    table_h: "Full table",
+    footer: "Click a column header to sort. Hovering a table row or chart point highlights its counterpart. Paper names link to the original paper; <b>*</b> marks rows with notes.",
+    kind_proposed: "Proposed by the paper", kind_baseline: "Baseline defense (reported by another paper)", kind_none: "No defense", kind_mine: "Your result",
+    col_paper: "Reported in", col_name: "Defense", col_venue: "Venue/Year", col_method: "Approach", col_model: "Model",
+    err_name: n => `Line ${n}: name is empty.`, err_num: n => `Line ${n}: could not read a number.`,
+    pos_empty: "Enter results on the left to see where they stand here, on the chart (★), and in the table (green rows). Ranks are against the currently filtered results.",
+    rank: (tie, k, n) => `${tie ? "tied " : ""}#<b>${k}</b> of ${n}`,
+    dom_some: (y, n, list, more) => `${n} result${n > 1 ? "s" : ""} beat yours on both ASR and ${y}: ${list}${more ? ", …" : ""}`,
+    dom_none: y => `Nothing beats yours on both ASR and ${y} (Pareto front)`,
+    no_model: "model not given", same_model: n => ` · ${n} result${n > 1 ? "s" : ""} on the same model`, under_attack: "Under attack",
+    tip_paper: p => `Reported in ${p}`,
+    axis_x: "ASR (lower is better, √ scale)",
+    omitted: n => `${n} row${n > 1 ? "s" : ""} with N/A values omitted from the chart (shown in the table).`,
+    count: (a, b) => `${a} / ${b} results`,
+    load_err: "Could not load data (data/results.csv). To view locally, serve the folder with python -m http.server.",
+  },
+  ko: {
+    title: "AgentDojo 방어 기법 비교", h1: "AgentDojo 방어 기법 비교",
+    intro: "AgentDojo 벤치마크에서 각 논문이 보고한 prompt injection 방어 기법의 Utility와 공격 성공률(ASR)을 정리했습니다.",
+    def_u: "<b>Utility (no attack)</b> 공격 없을 때 task 성공률",
+    def_ua: "<b>Utility (under attack)</b> 공격 중 task 성공률",
+    def_asr: "<b>ASR</b> 공격 성공률 (낮을수록 좋음)",
+    lnk_issue: "새 결과 제보", lnk_edit: "CSV 직접 수정 (PR)", lnk_repo: "GitHub 저장소",
+    note: "수치는 각 논문의 보고값이며, 논문마다 모델, AgentDojo 버전, 공격 설정이 달라 논문 간 비교는 참고용입니다.",
+    q_ph: "방어 기법, 방식, 모델 검색", f_paper: "논문", f_model: "모델", f_kind: "구분", all: "전체",
+    mine_h: "내 결과 비교",
+    mine_help: "한 줄에 하나씩 <code>이름, 모델, Utility, Utility(공격 중), ASR</code>. 숫자는 %, 없는 값은 비워 두거나 <code>-</code>. 입력값은 어디에도 저장되지 않으며 새로고침하면 사라집니다.",
+    clear: "지우기",
+    chart_foot: "왼쪽 위일수록 좋음 (공격은 막고 task는 잘 수행). x축은 0 근처를 펼쳐 보이기 위해 제곱근 스케일.",
+    table_h: "전체 표",
+    footer: "열 제목을 누르면 정렬됩니다. 표의 행이나 차트의 점에 마우스를 올리면 서로 강조됩니다. 논문 이름의 링크는 원 논문, <b>*</b> 표시는 비고가 있는 행입니다.",
+    kind_proposed: "논문 제안 기법", kind_baseline: "Baseline 방어 (다른 논문에서 보고)", kind_none: "방어 없음", kind_mine: "내 결과",
+    col_paper: "보고 논문", col_name: "방어 기법", col_venue: "학회/연도", col_method: "방식", col_model: "모델",
+    err_name: n => `${n}번째 줄: 이름이 비어 있습니다.`, err_num: n => `${n}번째 줄: 숫자를 읽을 수 없습니다.`,
+    pos_empty: "왼쪽에 결과를 적으면 여기와 차트(★), 표(초록 행)에 위치가 표시됩니다. 순위는 현재 필터에 걸린 결과 기준입니다.",
+    rank: (tie, k, n) => `${tie ? "공동 " : ""}<b>${k}</b> / ${n}위`,
+    dom_some: (y, n, list, more) => `ASR·${y} 둘 다 나보다 좋은 결과 ${n}개: ${list}${more ? " 외" : ""}`,
+    dom_none: y => `ASR·${y} 둘 다 나보다 좋은 결과 없음 (Pareto front)`,
+    no_model: "모델 미기재", same_model: n => ` · 같은 모델 결과 ${n}개`, under_attack: "공격 중",
+    tip_paper: p => `${p} 논문 보고값`,
+    axis_x: "ASR (낮을수록 좋음, √ 스케일)",
+    omitted: n => `값이 N/A인 ${n}개 행은 차트에서 제외 (표에는 표시).`,
+    count: (a, b) => `${a} / ${b}개 결과`,
+    load_err: "데이터를 불러오지 못했습니다 (data/results.csv). 로컬에서는 python -m http.server 로 열어 주세요.",
+  },
+};
+let lang = "en";
+try { if (L[localStorage.getItem("lang")]) lang = localStorage.getItem("lang"); } catch (e) {}
+const t = (k, ...a) => { const v = L[lang][k]; return typeof v === "function" ? v(...a) : v; };
+
 // ── 데이터: data/results.csv 하나가 원본입니다. ──
 function parseCSV(text) {
   const out = []; let row = [], cell = "", q = false;
@@ -307,11 +378,11 @@ function parseCSV(text) {
 const num = s => (s === undefined || s.trim() === "" || s.trim() === "N/A") ? null : parseFloat(s);
 let ROWS = [];
 const KINDS = {
-  proposed: { label: "논문 제안 기법", color: "var(--proposed)" },
-  baseline: { label: "Baseline 방어 (다른 논문에서 보고)", color: "var(--baseline)" },
-  none:     { label: "방어 없음", color: "var(--nodef)" },
+  proposed: { get label() { return t("kind_proposed"); }, color: "var(--proposed)" },
+  baseline: { get label() { return t("kind_baseline"); }, color: "var(--baseline)" },
+  none:     { get label() { return t("kind_none"); }, color: "var(--nodef)" },
 };
-const KIND_INFO = { ...KINDS, mine: { label: "내 결과", color: "var(--mine)" } };
+const KIND_INFO = { ...KINDS, mine: { get label() { return t("kind_mine"); }, color: "var(--mine)" } };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = v => v === null ? "N/A" : (Number.isInteger(v) ? v + "%" : v.toFixed(2) + "%");
 
@@ -388,9 +459,9 @@ function parseMine(text) {
     const c = line.split(line.includes("\t") ? "\t" : ",").map(s => s.trim());
     const v = s => { if (s === undefined || s === "" || s === "-" || s === "N/A") return null; const x = parseFloat(s.replace("%", "")); return Number.isFinite(x) ? x : NaN; };
     const [name, model, u, ua, asr] = [c[0], c[1] || "", v(c[2]), v(c[3]), v(c[4])];
-    if (!name) return errs.push(`${k + 1}번째 줄: 이름이 비어 있습니다.`);
-    if ([u, ua, asr].some(x => Number.isNaN(x))) return errs.push(`${k + 1}번째 줄: 숫자를 읽을 수 없습니다.`);
-    rows.push({ i: 100000 + rows.length, mine: true, paper: "내 결과", name, venue: "", method: "", model, u, ua, asr, kind: "mine", link: "", note: "" });
+    if (!name) return errs.push(t("err_name", k + 1));
+    if ([u, ua, asr].some(x => Number.isNaN(x))) return errs.push(t("err_num", k + 1));
+    rows.push({ i: 100000 + rows.length, mine: true, paper: t("kind_mine"), name, venue: "", method: "", model, u, ua, asr, kind: "mine", link: "", note: "" });
   });
   return { rows, errs };
 }
@@ -408,13 +479,12 @@ document.getElementById("mineClear").addEventListener("click", () => { mineInput
 // 현재 필터에 걸린 기존 결과 안에서의 위치
 function drawPositions(base) {
   const el = document.getElementById("minePos");
-  if (!MINE.length) { el.innerHTML = `<p class="pos-empty">왼쪽에 결과를 적으면 여기와 차트(★), 표(초록 행)에 위치가 표시됩니다. 순위는 현재 필터에 걸린 결과 기준입니다.</p>`; return; }
+  if (!MINE.length) { el.innerHTML = `<p class="pos-empty">${t("pos_empty")}</p>`; return; }
   const yLabel = state.y === "ua" ? "Utility (under attack)" : "Utility (no attack)";
   const rank = (key, v, better) => {
     const pool = base.filter(r => r[key] !== null);
     if (v === null || !pool.length) return "–";
-    const tie = pool.some(r => r[key] === v) ? "공동 " : "";
-    return `${tie}<b>${pool.filter(r => better(r[key], v)).length + 1}</b> / ${pool.length + 1}위`;
+    return t("rank", pool.some(r => r[key] === v), pool.filter(r => better(r[key], v)).length + 1, pool.length + 1);
   };
   el.innerHTML = MINE.map(m => {
     const y = m[state.y];
@@ -422,14 +492,14 @@ function drawPositions(base) {
     if (y !== null && m.asr !== null) {
       const ds = base.filter(r => r[state.y] !== null && r.asr !== null && r.asr <= m.asr && r[state.y] >= y && (r.asr < m.asr || r[state.y] > y));
       dom = ds.length
-        ? `ASR·${yLabel} 둘 다 나보다 좋은 결과 ${ds.length}개: ${ds.slice(0, 4).map(r => esc(`${r.name} (${r.model})`)).join(", ")}${ds.length > 4 ? " 외" : ""}`
-        : `ASR·${yLabel} 둘 다 나보다 좋은 결과 없음 (Pareto front)`;
+        ? t("dom_some", yLabel, ds.length, ds.slice(0, 4).map(r => esc(`${r.name} (${r.model})`)).join(", "), ds.length > 4)
+        : t("dom_none", yLabel);
     }
     const same = base.filter(r => m.model && r.model.toLowerCase() === m.model.toLowerCase()).length;
-    return `<li><div class="t">${esc(m.name)}</div><div class="m">${esc(m.model || "모델 미기재")}${same ? ` · 같은 모델 결과 ${same}개` : ""}</div>
+    return `<li><div class="t">${esc(m.name)}</div><div class="m">${esc(m.model || t("no_model"))}${same ? t("same_model", same) : ""}</div>
       <div class="stats"><span>ASR ${fmt(m.asr)} · ${rank("asr", m.asr, (a, b) => a < b)}</span>
       <span>Utility ${fmt(m.u)} · ${rank("u", m.u, (a, b) => a > b)}</span>
-      <span>공격 중 ${fmt(m.ua)} · ${rank("ua", m.ua, (a, b) => a > b)}</span></div>
+      <span>${t("under_attack")} ${fmt(m.ua)} · ${rank("ua", m.ua, (a, b) => a > b)}</span></div>
       ${dom ? `<div class="dom">${dom}</div>` : ""}</li>`;
   }).join("");
 }
@@ -444,7 +514,7 @@ const tip = document.getElementById("tip");
 
 function showTip(r, ev) {
   tip.innerHTML = `<div class="t">${esc(r.name)}</div><div class="m">${esc(r.method)} · ${esc(r.model)}</div>
-    <div class="m">${r.mine ? "내 결과" : `${esc(r.paper)} 논문 보고값 · ${KINDS[r.kind].label}`}</div>${r.note ? `<div class="m">${esc(r.note)}</div>` : ""}
+    <div class="m">${r.mine ? t("kind_mine") : `${t("tip_paper", esc(r.paper))} · ${KINDS[r.kind].label}`}</div>${r.note ? `<div class="m">${esc(r.note)}</div>` : ""}
     <dl><dt>Utility (no attack)</dt><dd>${fmt(r.u)}</dd><dt>Utility (under attack)</dt><dd>${fmt(r.ua)}</dd><dt>ASR</dt><dd>${fmt(r.asr)}</dd></dl>`;
   tip.style.display = "block";
   const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
@@ -476,7 +546,7 @@ function drawChart(rows) {
     const t = mk("g", { class: "tick" });
     mk("text", { x: xs(v), y: H - M.b + 18, "text-anchor": "middle" }, t).textContent = v + "%";
   });
-  mk("text", { class: "axis-label", x: (M.l + W - M.r) / 2, y: H - 10, "text-anchor": "middle" }).textContent = "ASR (낮을수록 좋음, √ 스케일)";
+  mk("text", { class: "axis-label", x: (M.l + W - M.r) / 2, y: H - 10, "text-anchor": "middle" }).textContent = t("axis_x");
   mk("text", { class: "axis-label", x: -(M.t + H - M.b) / 2, y: 16, transform: "rotate(-90)", "text-anchor": "middle" })
     .textContent = state.y === "ua" ? "Utility (under attack)" : "Utility (no attack)";
 
@@ -496,16 +566,16 @@ function drawChart(rows) {
     g.addEventListener("blur", () => { hideTip(); highlight(null); });
   });
   const miss = rows.filter(r => !r.mine).length - plotted.filter(r => !r.mine).length;
-  document.getElementById("omitted").textContent = miss ? `값이 N/A인 ${miss}개 행은 차트에서 제외 (표에는 표시).` : "";
+  document.getElementById("omitted").textContent = miss ? t("omitted", miss) : "";
 }
 
 // ── 표 ──
 const COLS = [
-  { key: "paper", label: "보고 논문" },
-  { key: "name", label: "방어 기법" },
-  { key: "venue", label: "학회/연도" },
-  { key: "method", label: "방식" },
-  { key: "model", label: "모델" },
+  { key: "paper", get label() { return t("col_paper"); } },
+  { key: "name", get label() { return t("col_name"); } },
+  { key: "venue", get label() { return t("col_venue"); } },
+  { key: "method", get label() { return t("col_method"); } },
+  { key: "model", get label() { return t("col_model"); } },
   { key: "u", label: "Utility (no attack)", num: true },
   { key: "ua", label: "Utility (under attack)", num: true },
   { key: "asr", label: "ASR", num: true },
@@ -561,6 +631,7 @@ function drawTable(rows) {
   });
   thead.querySelectorAll("th").forEach((th, idx) => {
     const c = COLS[idx];
+    th.querySelector("button").firstChild.textContent = c.label;
     th.querySelector(".arrow").textContent = state.sort.key === c.key ? (state.sort.dir > 0 ? "▲" : "▼") : "";
     th.setAttribute("aria-sort", state.sort.key === c.key ? (state.sort.dir > 0 ? "ascending" : "descending") : "none");
   });
@@ -569,7 +640,7 @@ function drawTable(rows) {
 function render() {
   const base = filteredBase();
   const rows = [...MINE, ...base];
-  document.getElementById("count").textContent = `${base.length} / ${ROWS.length}개 결과`;
+  document.getElementById("count").textContent = t("count", base.length, ROWS.length);
   drawPositions(base);
   drawChart(rows);
   drawTable(sorted(rows));
@@ -579,11 +650,29 @@ document.getElementById("q").addEventListener("input", e => { state.q = e.target
 document.getElementById("fPaper").addEventListener("change", e => { state.paper = e.target.value; render(); });
 document.getElementById("fModel").addEventListener("change", e => { state.model = e.target.value; render(); });
 document.getElementById("fKind").addEventListener("change", e => { state.kind = e.target.value; render(); });
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+document.querySelectorAll("#ySeg button").forEach(b => b.addEventListener("click", () => {
   state.y = b.dataset.y;
-  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  document.querySelectorAll("#ySeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
   render();
 }));
+
+// ── 언어 전환 ──
+let loadFailed = false;
+function applyLang(l) {
+  lang = l;
+  try { localStorage.setItem("lang", l); } catch (e) {}
+  document.documentElement.lang = l;
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach(e => { e.textContent = t(e.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-html]").forEach(e => { e.innerHTML = t(e.dataset.i18nHtml); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(e => { e.placeholder = t(e.dataset.i18nPh); });
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === l));
+  document.querySelectorAll("#fKind option").forEach(o => { if (o.value) o.textContent = KINDS[o.value].label; });
+  updateMine();
+  if (loadFailed) document.getElementById("count").textContent = t("load_err");
+}
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => applyLang(b.dataset.lang)));
+applyLang(lang);
 // ── 저장소 링크 (github.io 주소에서 자동으로 계산) ──
 (function repoLinks() {
   const m = location.hostname.match(/^([^.]+)\.github\.io$/);
@@ -613,7 +702,8 @@ fetch("data/results.csv", { cache: "no-cache" })
     render();
   })
   .catch(() => {
-    document.getElementById("count").textContent = "데이터를 불러오지 못했습니다 (data/results.csv). 로컬에서는 python -m http.server 로 열어 주세요.";
+    loadFailed = true;
+    document.getElementById("count").textContent = t("load_err");
   });
 </script>
 </body>
