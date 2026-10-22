@@ -53,3 +53,14 @@ AgentArmor,AgentArmor,arXiv 2025,Program Dependence Graph,GPT-4o-mini,72,,3,prop
 AgentArmor,AgentArmor,arXiv 2025,Program Dependence Graph,GPT-4o,72,,4,proposed,,
 RTBAS,RTBAS (LM-Judge),arXiv 2025,IFC + LLM Screening,GPT-4o,,,0,proposed,,
 RTBAS,RTBAS (Attention),arXiv 2025,IFC + Attention Screening,GPT-4o + Phi-3-Mini,,,0,proposed,,
+ActGuard,AgentDojo,NeurIPS 2024,No Defense,GPT-4o-mini,67.01,36.56,33.93,none,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,Tool Filter,NeurIPS 2024,Tool Filter,GPT-4o-mini,62.89,49.32,4.21,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,ProtectAI DeBERTa,2024,PI Detector,GPT-4o-mini,46.39,22.87,7.17,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,Spotlighting,arXiv 2024,Data Delimiting,GPT-4o-mini,67.01,32.24,23.18,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,Sandwich Defense,2024,Prompt Sandwiching,GPT-4o-mini,61.86,31.51,10.12,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,Llama Prompt Guard 2,2025,PI Detector,GPT-4o-mini,69.07,30.03,15.91,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,PIGuard,ACL 2025,PI Detector,GPT-4o-mini,43.30,14.91,2.30,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,Progent,arXiv 2026,Privilege Control,GPT-4o-mini,60.82,47.84,5.16,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,CaMeL,arXiv 2025,Dual LLM + Capability Policies,GPT-4o-mini,24.74,23.71,0.00,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,DRIFT,arXiv 2025,Dynamic Validation + Isolation,GPT-4o-mini,62.89,57.85,1.90,baseline,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"
+ActGuard,ActGuard,arXiv 2026,Pre-execution Action Auditing,GPT-4o-mini,68.04,59.85,0.42,proposed,https://arxiv.org/abs/2609.14987,"Table 9, 4개 suite 평균 (task 단위 집계)"

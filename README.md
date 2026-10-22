@@ -28,7 +28,7 @@ AgentDojo 벤치마크에서 각 논문이 보고한 prompt injection 방어 기
 아래 표는 `data/results.csv`에서 자동 생성됩니다. 직접 고치지 말고 CSV를 수정해 주세요.
 
 <!-- TABLE:BEGIN -->
-총 54개 결과 · 14개 논문
+총 65개 결과 · 15개 논문
 
 | 보고 논문 | 방어 기법 | 학회/연도 | 방식 | 모델 | Utility<br>(no attack) | Utility<br>(under attack) | ASR |
 | --- | --- | --- | --- | --- | ---: | ---: | ---: |
@@ -86,4 +86,15 @@ AgentDojo 벤치마크에서 각 논문이 보고한 prompt injection 방어 기
 |  | **AgentArmor** | arXiv 2025 | Program Dependence Graph | GPT-4o | 72% | – | 4% |
 | RTBAS | **RTBAS (LM-Judge)** | arXiv 2025 | IFC + LLM Screening | GPT-4o | – | – | 0% |
 |  | **RTBAS (Attention)** | arXiv 2025 | IFC + Attention Screening | GPT-4o + Phi-3-Mini | – | – | 0% |
+| [ActGuard](https://arxiv.org/abs/2609.14987) | _AgentDojo_ <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | NeurIPS 2024 | No Defense | GPT-4o-mini | 67.01% | 36.56% | 33.93% |
+|  | Tool Filter <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | NeurIPS 2024 | Tool Filter | GPT-4o-mini | 62.89% | 49.32% | 4.21% |
+|  | ProtectAI DeBERTa <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | 2024 | PI Detector | GPT-4o-mini | 46.39% | 22.87% | 7.17% |
+|  | Spotlighting <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | arXiv 2024 | Data Delimiting | GPT-4o-mini | 67.01% | 32.24% | 23.18% |
+|  | Sandwich Defense <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | 2024 | Prompt Sandwiching | GPT-4o-mini | 61.86% | 31.51% | 10.12% |
+|  | Llama Prompt Guard 2 <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | 2025 | PI Detector | GPT-4o-mini | 69.07% | 30.03% | 15.91% |
+|  | PIGuard <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | ACL 2025 | PI Detector | GPT-4o-mini | 43.30% | 14.91% | 2.30% |
+|  | Progent <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | arXiv 2026 | Privilege Control | GPT-4o-mini | 60.82% | 47.84% | 5.16% |
+|  | CaMeL <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | arXiv 2025 | Dual LLM + Capability Policies | GPT-4o-mini | 24.74% | 23.71% | 0.00% |
+|  | DRIFT <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | arXiv 2025 | Dynamic Validation + Isolation | GPT-4o-mini | 62.89% | 57.85% | 1.90% |
+|  | **ActGuard** <sup title="Table 9, 4개 suite 평균 (task 단위 집계)">*</sup> | arXiv 2026 | Pre-execution Action Auditing | GPT-4o-mini | 68.04% | 59.85% | 0.42% |
 <!-- TABLE:END -->
