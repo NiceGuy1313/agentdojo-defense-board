@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentDojo 방어 기법 비교</title>
+<meta name="description" content="AgentDojo 벤치마크에서 보고된 prompt injection 방어 기법들의 Utility와 ASR 정리">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #fcfcfb;
+  --panel: #ffffff;
+  --line: #e4e3df;
+  --line-strong: #cfcdc7;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --text-3: #7a7974;
+  --accent: #2a78d6;
+  --proposed: #2a78d6;
+  --baseline: #eb6834;
+  --nodef: #8a8984;
+  --bar: #2a78d6;
+  --bar-track: #eef0f3;
+  --hl: #f2f6fc;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141413;
+    --panel: #1a1a19;
+    --line: #2c2c2a;
+    --line-strong: #3d3d3a;
+    --text: #f0efec;
+    --text-2: #c3c2b7;
+    --text-3: #918f86;
+    --accent: #3987e5;
+    --proposed: #3987e5;
+    --baseline: #d95926;
+    --nodef: #8f8e88;
+    --bar: #3987e5;
+    --bar-track: #262625;
+    --hl: #1f2733;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141413;
+  --panel: #1a1a19;
+  --line: #2c2c2a;
+  --line-strong: #3d3d3a;
+  --text: #f0efec;
+  --text-2: #c3c2b7;
+  --text-3: #918f86;
+  --accent: #3987e5;
+  --proposed: #3987e5;
+  --baseline: #d95926;
+  --nodef: #8f8e88;
+  --bar: #3987e5;
+  --bar-track: #262625;
+  --hl: #1f2733;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 1280px; margin: 0 auto; padding: 40px 24px 64px; }
+header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--text-2); max-width: 760px; }
+.defs {
+  display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 18px 0 0; padding: 0;
+  list-style: none; font-size: 13.5px; color: var(--text-2);
+}
+.defs b { color: var(--text); font-weight: 500; }
+.note {
+  margin-top: 14px; font-size: 13px; color: var(--text-3);
+}
+section { margin-top: 36px; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+
+.controls {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+  margin: 28px 0 0; padding: 14px 16px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+}
+.controls label { font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+.controls input[type=search], .controls select {
+  font: inherit; font-size: 14px; color: var(--text);
+  background: var(--bg); border: 1px solid var(--line-strong); border-radius: 6px;
+  padding: 6px 10px; min-width: 0;
+}
+.controls input[type=search] { width: 220px; }
+.controls .count { margin-left: auto; font-size: 13px; color: var(--text-3); }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 12px; }
+.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 6px; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; }
+.seg button {
+  font: inherit; font-size: 13px; padding: 5px 12px; border: 0; background: transparent; color: var(--text-2); cursor: pointer;
+}
+.seg button[aria-pressed=true] { background: var(--text); color: var(--bg); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--text-2); margin: 4px 0 0; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { overflow: visible; }
+#chart { width: 100%; height: auto; display: block; }
+#chart text { font-family: inherit; }
+.axis-label { fill: var(--text-3); font-size: 12px; }
+.tick text { fill: var(--text-3); font-size: 11.5px; }
+.grid line { stroke: var(--line); }
+.pt { transition: opacity .12s; }
+.pt.dim { opacity: .18; }
+.chart-foot { font-size: 12.5px; color: var(--text-3); margin: 4px 0 0; }
+
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; display: none;
+  background: var(--panel); color: var(--text); border: 1px solid var(--line-strong);
+  border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.5;
+  box-shadow: 0 6px 20px rgba(0,0,0,.12); max-width: 280px;
+}
+#tip .t { font-weight: 700; }
+#tip .m { color: var(--text-2); }
+#tip dl { display: grid; grid-template-columns: auto auto; gap: 0 14px; margin: 6px 0 0; }
+#tip dt { color: var(--text-3); }
+#tip dd { margin: 0; text-align: right; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 1060px; }
+tbody td { white-space: nowrap; }
+tbody td.wrapok { white-space: normal; min-width: 150px; max-width: 210px; }
+thead th {
+  position: sticky; top: 0; background: var(--panel);
+  text-align: left; font-weight: 500; color: var(--text-2); font-size: 12.5px;
+  padding: 10px 10px; border-bottom: 1px solid var(--line-strong); white-space: nowrap;
+}
+thead th.num { text-align: right; }
+thead th button {
+  all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center;
+}
+thead th button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+thead th .arrow { color: var(--text-3); font-size: 10px; width: 8px; }
+tbody td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.group-start td { border-top: 1px solid var(--line-strong); }
+tbody tr:hover, tbody tr.hl { background: var(--hl); }
+td.num { text-align: right; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; white-space: nowrap; }
+td.na { color: var(--text-3); }
+td.paper { color: var(--text-2); white-space: nowrap; }
+td.name { font-weight: 500; white-space: nowrap; }
+td.venue { color: var(--text-2); white-space: nowrap; }
+.kind { display: inline-flex; align-items: center; gap: 6px; }
+.asr { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.asr .track { width: 64px; height: 6px; background: var(--bar-track); border-radius: 3px; overflow: hidden; flex: none; }
+.asr .fill { height: 100%; background: var(--bar); border-radius: 3px; }
+.asr .v { width: 52px; text-align: right; }
+.contrib { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+.contrib[hidden] { display: none; }
+.contrib a {
+  font-size: 13px; color: var(--text); text-decoration: none;
+  border: 1px solid var(--line-strong); border-radius: 7px; padding: 5px 12px; background: var(--panel);
+}
+.contrib a:hover { border-color: var(--accent); color: var(--accent); }
+td.paper a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+td.paper a:hover { color: var(--accent); text-decoration-color: currentColor; }
+.noteflag { color: var(--accent); cursor: help; font-weight: 700; }
+footer { margin-top: 40px; font-size: 12.5px; color: var(--text-3); }
+
+@media (max-width: 640px) {
+  .wrap { padding: 28px 16px 48px; }
+  header h1 { font-size: 22px; }
+  .controls input[type=search] { width: 100%; }
+  .controls label { flex: 1 1 100%; }
+  .controls label select { flex: 1; }
+  .controls .count { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AgentDojo 방어 기법 비교</h1>
+    <p>AgentDojo 벤치마크에서 각 논문이 보고한 prompt injection 방어 기법의 Utility와 공격 성공률(ASR)을 정리했습니다.</p>
+    <ul class="defs">
+      <li><b>Utility (no attack)</b> 공격 없을 때 task 성공률</li>
+      <li><b>Utility (under attack)</b> 공격 중 task 성공률</li>
+      <li><b>ASR</b> 공격 성공률 (낮을수록 좋음)</li>
+    </ul>
+    <p class="contrib" id="contrib" hidden>
+      <a id="lnkIssue" href="#">새 결과 제보</a>
+      <a id="lnkEdit" href="#">CSV 직접 수정 (PR)</a>
+      <a id="lnkRepo" href="#">GitHub 저장소</a>
+    </p>
+    <p class="note">수치는 각 논문의 보고값이며, 논문마다 모델, AgentDojo 버전, 공격 설정이 달라 논문 간 비교는 참고용입니다.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="필터">
+    <input type="search" id="q" placeholder="방어 기법, 방식, 모델 검색" aria-label="검색">
+    <label>논문 <select id="fPaper"><option value="">전체</option></select></label>
+    <label>모델 <select id="fModel"><option value="">전체</option></select></label>
+    <label>구분 <select id="fKind"><option value="">전체</option></select></label>
+    <span class="count" id="count"></span>
+  </div>
+
+  <section>
+    <div class="card">
+      <div class="chart-head">
+        <h2 style="margin:0">Utility vs ASR</h2>
+        <div class="seg" role="group" aria-label="y축 지표">
+          <button type="button" data-y="ua" aria-pressed="true">Utility (under attack)</button>
+          <button type="button" data-y="u" aria-pressed="false">Utility (no attack)</button>
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <svg id="chart" viewBox="0 0 860 430" role="img" aria-label="방어 기법별 Utility와 ASR 산점도"></svg>
+      <p class="chart-foot">왼쪽 위일수록 좋음 (공격은 막고 task는 잘 수행). x축은 0 근처를 펼쳐 보이기 위해 제곱근 스케일. <span id="omitted"></span></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>전체 표</h2>
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead><tr></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>열 제목을 누르면 정렬됩니다. 표의 행이나 차트의 점에 마우스를 올리면 서로 강조됩니다. 논문 이름의 링크는 원 논문, <b>*</b> 표시는 비고가 있는 행입니다.</footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+// ── 데이터: data/results.csv 하나가 원본입니다. ──
+function parseCSV(text) {
+  const out = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell); cell = ""; if (row.some(c => c !== "")) out.push(row); row = [];
+    } else cell += ch;
+  }
+  row.push(cell); if (row.some(c => c !== "")) out.push(row);
+  return out;
+}
+const num = s => (s === undefined || s.trim() === "" || s.trim() === "N/A") ? null : parseFloat(s);
+let ROWS = [];
+const KINDS = {
+  proposed: { label: "논문 제안 기법", color: "var(--proposed)" },
+  baseline: { label: "Baseline 방어 (다른 논문에서 보고)", color: "var(--baseline)" },
+  none:     { label: "방어 없음", color: "var(--nodef)" },
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = v => v === null ? "N/A" : (Number.isInteger(v) ? v + "%" : v.toFixed(2) + "%");
+
+// ── 마커 모양 (색과 함께 모양으로도 구분) ──
+function marker(kind, x, y, size) {
+  const ns = "http://www.w3.org/2000/svg";
+  let el;
+  if (kind === "baseline") {
+    el = document.createElementNS(ns, "rect");
+    el.setAttribute("x", x - size); el.setAttribute("y", y - size);
+    el.setAttribute("width", size * 2); el.setAttribute("height", size * 2); el.setAttribute("rx", 1.5);
+  } else {
+    el = document.createElementNS(ns, "circle");
+    el.setAttribute("cx", x); el.setAttribute("cy", y); el.setAttribute("r", size);
+  }
+  if (kind === "none") {
+    el.setAttribute("fill", "var(--panel)"); el.setAttribute("stroke", KINDS[kind].color); el.setAttribute("stroke-width", 2.5);
+  } else {
+    el.setAttribute("fill", KINDS[kind].color); el.setAttribute("stroke", "var(--panel)"); el.setAttribute("stroke-width", 2);
+  }
+  return el;
+}
+
+// legend
+document.getElementById("legend").innerHTML = Object.entries(KINDS).map(([k, v]) => {
+  const shape = k === "baseline"
+    ? `<rect x="1" y="1" width="10" height="10" rx="1.5" fill="${v.color}"/>`
+    : k === "none"
+      ? `<circle cx="6" cy="6" r="4.5" fill="none" stroke="${v.color}" stroke-width="2.2"/>`
+      : `<circle cx="6" cy="6" r="5.5" fill="${v.color}"/>`;
+  return `<span><svg width="12" height="12">${shape}</svg>${v.label}</span>`;
+}).join("");
+
+// ── 필터 ──
+const state = { q: "", paper: "", model: "", kind: "", y: "ua", sort: { key: null, dir: 1 } };
+const uniq = a => [...new Set(a)];
+function fillSelect(id, values, labels) {
+  const s = document.getElementById(id);
+  values.forEach((v, i) => { const o = document.createElement("option"); o.value = v; o.textContent = labels ? labels[i] : v; s.appendChild(o); });
+}
+
+
+function filtered() {
+  const q = state.q.toLowerCase();
+  return ROWS.filter(r =>
+    (!state.paper || r.paper === state.paper) &&
+    (!state.model || r.model === state.model) &&
+    (!state.kind || r.kind === state.kind) &&
+    (!q || [r.paper, r.name, r.venue, r.method, r.model].join(" ").toLowerCase().includes(q)));
+}
+
+// ── 차트 ──
+const svg = document.getElementById("chart");
+const W = 860, H = 430, M = { l: 58, r: 20, t: 16, b: 52 };
+const XMAX = 50;
+const xs = v => M.l + Math.sqrt(v / XMAX) * (W - M.l - M.r);
+const ys = v => M.t + (1 - v / 100) * (H - M.t - M.b);
+const tip = document.getElementById("tip");
+
+function showTip(r, ev) {
+  tip.innerHTML = `<div class="t">${esc(r.name)}</div><div class="m">${esc(r.method)} · ${esc(r.model)}</div>
+    <div class="m">${esc(r.paper)} 논문 보고값 · ${KINDS[r.kind].label}</div>${r.note ? `<div class="m">${esc(r.note)}</div>` : ""}
+    <dl><dt>Utility (no attack)</dt><dd>${fmt(r.u)}</dd><dt>Utility (under attack)</dt><dd>${fmt(r.ua)}</dd><dt>ASR</dt><dd>${fmt(r.asr)}</dd></dl>`;
+  tip.style.display = "block";
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => { tip.style.display = "none"; };
+
+function highlight(i) {
+  svg.querySelectorAll(".pt").forEach(g => g.classList.toggle("dim", i !== null && +g.dataset.i !== i));
+  document.querySelectorAll("#tbl tbody tr").forEach(tr => tr.classList.toggle("hl", +tr.dataset.i === i));
+}
+
+function drawChart(rows) {
+  const ns = "http://www.w3.org/2000/svg";
+  svg.innerHTML = "";
+  const mk = (tag, attrs, parent = svg) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+
+  const grid = mk("g", { class: "grid" });
+  [0, 20, 40, 60, 80, 100].forEach(v => {
+    mk("line", { x1: M.l, x2: W - M.r, y1: ys(v), y2: ys(v) }, grid);
+    const t = mk("g", { class: "tick" });
+    mk("text", { x: M.l - 10, y: ys(v) + 4, "text-anchor": "end" }, t).textContent = v + "%";
+  });
+  [0, 1, 2, 5, 10, 20, 30, 40, 50].forEach(v => {
+    mk("line", { x1: xs(v), x2: xs(v), y1: M.t, y2: H - M.b, "stroke-dasharray": v === 0 ? "" : "2 4" }, grid);
+    const t = mk("g", { class: "tick" });
+    mk("text", { x: xs(v), y: H - M.b + 18, "text-anchor": "middle" }, t).textContent = v + "%";
+  });
+  mk("text", { class: "axis-label", x: (M.l + W - M.r) / 2, y: H - 10, "text-anchor": "middle" }).textContent = "ASR (낮을수록 좋음, √ 스케일)";
+  mk("text", { class: "axis-label", x: -(M.t + H - M.b) / 2, y: 16, transform: "rotate(-90)", "text-anchor": "middle" })
+    .textContent = state.y === "ua" ? "Utility (under attack)" : "Utility (no attack)";
+
+  const plotted = rows.filter(r => r[state.y] !== null && r.asr !== null);
+  const order = { none: 0, baseline: 1, proposed: 2 };
+  plotted.sort((a, b) => order[a.kind] - order[b.kind]);
+  plotted.forEach(r => {
+    const g = mk("g", { class: "pt", "data-i": r.i, tabindex: 0, role: "img",
+      "aria-label": `${r.name}, ${r.model}: ASR ${fmt(r.asr)}, Utility ${fmt(r[state.y])}` });
+    const x = xs(Math.min(r.asr, XMAX)), y = ys(r[state.y]);
+    g.appendChild(marker(r.kind, x, y, r.kind === "baseline" ? 5 : 5.5));
+    mk("circle", { cx: x, cy: y, r: 11, fill: "transparent" }, g);
+    g.addEventListener("mousemove", ev => { showTip(r, ev); highlight(r.i); });
+    g.addEventListener("mouseleave", () => { hideTip(); highlight(null); });
+    g.addEventListener("focus", () => { const b = g.getBoundingClientRect(); showTip(r, { clientX: b.right, clientY: b.top }); highlight(r.i); });
+    g.addEventListener("blur", () => { hideTip(); highlight(null); });
+  });
+  const miss = rows.length - plotted.length;
+  document.getElementById("omitted").textContent = miss ? `값이 N/A인 ${miss}개 행은 차트에서 제외 (표에는 표시).` : "";
+}
+
+// ── 표 ──
+const COLS = [
+  { key: "paper", label: "보고 논문" },
+  { key: "name", label: "방어 기법" },
+  { key: "venue", label: "학회/연도" },
+  { key: "method", label: "방식" },
+  { key: "model", label: "모델" },
+  { key: "u", label: "Utility (no attack)", num: true },
+  { key: "ua", label: "Utility (under attack)", num: true },
+  { key: "asr", label: "ASR", num: true },
+];
+const thead = document.querySelector("#tbl thead tr");
+COLS.forEach(c => {
+  const th = document.createElement("th");
+  if (c.num) th.className = "num";
+  th.innerHTML = `<button type="button">${c.label}<span class="arrow"></span></button>`;
+  th.querySelector("button").addEventListener("click", () => {
+    if (state.sort.key === c.key) state.sort.dir *= -1;
+    else { state.sort.key = c.key; state.sort.dir = c.key === "asr" ? 1 : (c.num ? -1 : 1); }
+    render();
+  });
+  thead.appendChild(th);
+});
+
+function sorted(rows) {
+  const { key, dir } = state.sort;
+  if (!key) return rows;
+  return [...rows].sort((a, b) => {
+    const x = a[key], y = b[key];
+    if (x === null && y === null) return a.i - b.i;
+    if (x === null) return 1;
+    if (y === null) return -1;
+    return (typeof x === "number" ? x - y : x.localeCompare(y)) * dir || a.i - b.i;
+  });
+}
+
+function drawTable(rows) {
+  const tb = document.querySelector("#tbl tbody");
+  const grouped = !state.sort.key;
+  tb.innerHTML = rows.map((r, k) => {
+    const start = grouped && k > 0 && rows[k - 1].paper !== r.paper ? "group-start" : "";
+    const num = v => `<td class="num${v === null ? " na" : ""}">${fmt(v)}</td>`;
+    const asr = r.asr === null ? `<td class="num na">N/A</td>`
+      : `<td class="num"><div class="asr"><div class="track"><div class="fill" style="width:${Math.min(r.asr, 50) / 50 * 100}%"></div></div><span class="v">${fmt(r.asr)}</span></div></td>`;
+    const k2 = KINDS[r.kind];
+    const shape = r.kind === "baseline"
+      ? `<rect x="1" y="1" width="8" height="8" rx="1.5" fill="${k2.color}"/>`
+      : r.kind === "none" ? `<circle cx="5" cy="5" r="3.6" fill="none" stroke="${k2.color}" stroke-width="2"/>`
+      : `<circle cx="5" cy="5" r="4.5" fill="${k2.color}"/>`;
+    return `<tr data-i="${r.i}" class="${start}">
+      <td class="paper">${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.paper)}</a>` : esc(r.paper)}</td>
+      <td class="name"><span class="kind" title="${k2.label}"><svg width="10" height="10" aria-hidden="true">${shape}</svg>${esc(r.name)}</span>${r.note ? ` <span class="noteflag" title="${esc(r.note)}">*</span>` : ""}</td>
+      <td class="venue">${esc(r.venue)}</td><td class="wrapok">${esc(r.method)}</td><td class="wrapok">${esc(r.model)}</td>
+      ${num(r.u)}${num(r.ua)}${asr}</tr>`;
+  }).join("");
+  tb.querySelectorAll("tr").forEach(tr => {
+    tr.addEventListener("mouseenter", () => highlight(+tr.dataset.i));
+    tr.addEventListener("mouseleave", () => highlight(null));
+  });
+  thead.querySelectorAll("th").forEach((th, idx) => {
+    const c = COLS[idx];
+    th.querySelector(".arrow").textContent = state.sort.key === c.key ? (state.sort.dir > 0 ? "▲" : "▼") : "";
+    th.setAttribute("aria-sort", state.sort.key === c.key ? (state.sort.dir > 0 ? "ascending" : "descending") : "none");
+  });
+}
+
+function render() {
+  const rows = filtered();
+  document.getElementById("count").textContent = `${rows.length} / ${ROWS.length}개 결과`;
+  drawChart(rows);
+  drawTable(sorted(rows));
+}
+
+document.getElementById("q").addEventListener("input", e => { state.q = e.target.value; render(); });
+document.getElementById("fPaper").addEventListener("change", e => { state.paper = e.target.value; render(); });
+document.getElementById("fModel").addEventListener("change", e => { state.model = e.target.value; render(); });
+document.getElementById("fKind").addEventListener("change", e => { state.kind = e.target.value; render(); });
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  state.y = b.dataset.y;
+  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  render();
+}));
+// ── 저장소 링크 (github.io 주소에서 자동으로 계산) ──
+(function repoLinks() {
+  const m = location.hostname.match(/^([^.]+)\.github\.io$/);
+  if (!m) return;
+  const repo = location.pathname.split("/").filter(Boolean)[0] || `${m[1]}.github.io`;
+  const base = `https://github.com/${m[1]}/${repo}`;
+  document.getElementById("lnkRepo").href = base;
+  document.getElementById("lnkEdit").href = `${base}/edit/main/data/results.csv`;
+  document.getElementById("lnkIssue").href = `${base}/issues/new?template=new-result.yml`;
+  document.getElementById("contrib").hidden = false;
+})();
+
+fetch("data/results.csv", { cache: "no-cache" })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(text => {
+    const [head, ...body] = parseCSV(text.replace(/^﻿/, ""));
+    const H = Object.fromEntries(head.map((h, i) => [h.trim(), i]));
+    const g = (c, k) => (c[H[k]] ?? "").trim();
+    ROWS = body.map((c, i) => ({
+      i, paper: g(c, "paper"), name: g(c, "defense"), venue: g(c, "venue"), method: g(c, "method"), model: g(c, "model"),
+      u: num(g(c, "utility")), ua: num(g(c, "utility_under_attack")), asr: num(g(c, "asr")),
+      kind: KINDS[g(c, "kind")] ? g(c, "kind") : "proposed", link: g(c, "link"), note: g(c, "note"),
+    }));
+    fillSelect("fPaper", uniq(ROWS.map(r => r.paper)));
+    fillSelect("fModel", uniq(ROWS.map(r => r.model)).sort());
+    fillSelect("fKind", Object.keys(KINDS), Object.values(KINDS).map(k => k.label));
+    render();
+  })
+  .catch(() => {
+    document.getElementById("count").textContent = "데이터를 불러오지 못했습니다 (data/results.csv). 로컬에서는 python -m http.server 로 열어 주세요.";
+  });
+</script>
+</body>
+</html>

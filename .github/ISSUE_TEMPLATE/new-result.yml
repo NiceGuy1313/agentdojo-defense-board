@@ -1,0 +1,86 @@
+name: 새 결과 제보 / 수치 수정
+description: AgentDojo 방어 결과를 추가하거나 잘못된 수치를 알려 주세요.
+title: "[result] "
+labels: ["data"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: 종류
+      options:
+        - 새 결과 추가
+        - 기존 수치 수정
+    validations:
+      required: true
+  - type: input
+    id: paper
+    attributes:
+      label: 보고 논문 (paper)
+      description: 이 수치가 실린 논문
+      placeholder: MELON
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: 논문 링크
+      placeholder: https://arxiv.org/abs/...
+    validations:
+      required: true
+  - type: input
+    id: defense
+    attributes:
+      label: 방어 기법 (defense)
+      placeholder: MELON-Aug
+    validations:
+      required: true
+  - type: input
+    id: venue
+    attributes:
+      label: 학회/연도 (venue)
+      placeholder: ICML 2025
+  - type: input
+    id: method
+    attributes:
+      label: 방식 (method)
+      placeholder: Masked Re-execution
+  - type: input
+    id: model
+    attributes:
+      label: 모델 (model)
+      placeholder: GPT-4o
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 구분 (kind)
+      options:
+        - proposed (그 논문의 제안 기법)
+        - baseline (그 논문이 비교용으로 보고)
+        - none (방어 없음)
+    validations:
+      required: true
+  - type: input
+    id: utility
+    attributes:
+      label: Utility (no attack, %)
+      placeholder: "76.29"
+  - type: input
+    id: utility_under_attack
+    attributes:
+      label: Utility (under attack, %)
+      placeholder: "68.72"
+  - type: input
+    id: asr
+    attributes:
+      label: ASR (%)
+      placeholder: "0.32"
+  - type: textarea
+    id: note
+    attributes:
+      label: 출처 / 비고
+      description: 표나 그림 번호, 공격 설정 등. 수정 요청이면 어느 행이 왜 틀렸는지 적어 주세요.
+      placeholder: Table 2, important_instructions 공격
+    validations:
+      required: true
